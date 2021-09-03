@@ -54,41 +54,38 @@ void Graph::setContent(const GraphContent &newContent) {
 
 void Graph::initInterface() {
     if (style.displayXTicks) {
-        for (int i = 0; i < (abs(xRanges.negative) + abs(xRanges.positive)) / style.xtick + 1; i++) {
+        double startPos = -xRanges.negative;
+        startPos = floor(startPos);
+
+        for (int i = 0; i < xRng / style.xtick + 1; i++) {
             // grid
-            interface.addPrimitive(GraphPrimitive::createLine({(double) style.xtick * i, (double) yRanges.positive},
-                                                               {(double) style.xtick * i, -(double) yRanges.negative}, 1,
+            interface.addPrimitive(GraphPrimitive::createLine({(double) startPos, (double) yRanges.positive},
+                                                               {(double) startPos, -(double) yRanges.negative}, 1,
                                                               style.gridColor));
-            interface.addPrimitive(GraphPrimitive::createLine({-(double) style.xtick * i, (double) yRanges.positive},
-                               {-(double) style.xtick * i, -(double) yRanges.negative}, 1,
-                                                              style.gridColor));
+
             // ticks
-            interface.addPrimitive(GraphPrimitive::createLine({(double) style.xtick * i, (double) style.xtick / 5},
-                               {(double) style.xtick * i, -(double) style.xtick / 5}, 1,
+            interface.addPrimitive(GraphPrimitive::createLine({(double) startPos, (double) style.xtick / 5},
+                               {(double) startPos, -(double) style.xtick / 5}, 1,
                                                               style.tickColor));
-            interface.addPrimitive(GraphPrimitive::createLine({-(double) style.xtick * i, (double) style.xtick / 5},
-                               {-(double) style.xtick * i, -(double) style.xtick / 5}, 1,
-                                                              style.tickColor));
+            startPos += style.xtick;
         }
     }
 
     if (style.displayYTicks) {
-        for (int i = 0; i < (abs(yRanges.negative) + abs(yRanges.positive)) / style.ytick + 1; i++) {
+        double startPos = -yRanges.negative;
+        startPos = floor(startPos);
+
+        for (int i = 0; i < yRng / style.ytick + 1; i++) {
             // grid
-            interface.addPrimitive(GraphPrimitive::createLine({-(double) xRanges.negative, (double) style.ytick * i},
-                               {(double) xRanges.positive, (double) style.ytick * i}, 1,
-                                                              style.gridColor));
-            interface.addPrimitive(GraphPrimitive::createLine({-(double) xRanges.negative, -(double) style.ytick * i},
-                               {(double) xRanges.positive, -(double) style.ytick * i}, 1,
+            interface.addPrimitive(GraphPrimitive::createLine({(double) xRanges.positive, (double) startPos },
+                                                              {-(double) xRanges.negative,(double) startPos }, 1,
                                                               style.gridColor));
 
             // ticks
-            interface.addPrimitive(GraphPrimitive::createLine({(double) style.ytick / 5, (double) style.ytick * i},
-                               {-(double) style.ytick / 5, (double) style.ytick * i}, 1,
+            interface.addPrimitive(GraphPrimitive::createLine({(double) style.ytick / 5, (double) startPos},
+                                                              {-(double) style.ytick / 5, (double) startPos}, 1,
                                                               style.tickColor));
-            interface.addPrimitive(GraphPrimitive::createLine({(double) style.ytick / 5, -(double) style.ytick * i},
-                               {-(double) style.ytick / 5, -(double) style.ytick * i}, 1,
-                                                              style.tickColor));
+            startPos += style.ytick;
         }
     }
     interface.addPrimitive(GraphPrimitive::createArrow({(double) (-xRanges.negative), 0}, {(double) xRanges.positive, 0},
