@@ -11,7 +11,7 @@ find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 find_package(SDL2_gfx REQUIRED)
 
-set(Plotter_SRC main.cpp plot/graph/Graph.cpp plot/graph/GraphPrimitive.cpp plot/graph/GraphContent.cpp)
+set(Plotter_SRC main.cpp plot/graph/Graph.cpp plot/graph/GraphPrimitive.cpp plot/graph/GraphContent.cpp plot/sdl/GfxExtensions.cpp)
 
 add_executable(Plotter "${Plotter_SRC}")
 include_directories(Plotter ${SDL2_INCLUDE_DIRS} ${SDL2_GFX_INCLUDE_DIRS})

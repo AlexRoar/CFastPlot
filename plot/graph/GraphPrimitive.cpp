@@ -5,16 +5,18 @@
 #include "GraphPrimitive.h"
 #include "../sdl/GfxExtensions.h"
 
-int GraphPrimitive::render(SDL_Surface *surface, SDL_Renderer* renderer) {
+int GraphPrimitive::render(Graph* graph, SDL_Surface *surface, SDL_Renderer* renderer) {
     switch (type) {
         case GRAPH_CIRCLE:
-            return circleGraphical.render(surface, renderer);
+            return shapeGraphical.circle.render(surface, renderer);
         case GRAPH_LINE:
-            return lineGraphical.render(surface, renderer);
+            return shapeGraphical.line.render(surface, renderer);
         case GRAPH_POINT:
-            return pointGraphical.render(surface, renderer);
+            return shapeGraphical.point.render(surface, renderer);
         case GRAPH_ARROW:
-            return arrowGraphical.render(surface, renderer);
+            return shapeGraphical.arrow.render(surface, renderer);
+        case GRAPH_FUNC:
+            return shapeGraphical.func.render(graph, surface, renderer);
         default: {
             printf("Unreachable switch branch");
             exit(EXIT_FAILURE);
@@ -23,15 +25,22 @@ int GraphPrimitive::render(SDL_Surface *surface, SDL_Renderer* renderer) {
 }
 
 void GraphPrimitive::computeGraphical(Graph *graph) {
+    if (trueGraphical) {
+        shapeGraphical = shape;
+        return;
+    }
     switch (type) {
         case GRAPH_CIRCLE:
-            return circleGraphical.computeGraphical(graph, circle);
+            return shapeGraphical.circle.computeGraphical(graph, shape.circle);
         case GRAPH_LINE:
-            return lineGraphical.computeGraphical(graph, line);
+            return shapeGraphical.line.computeGraphical(graph, shape.line);
         case GRAPH_POINT:
-            return pointGraphical.computeGraphical(graph, point);
+            return shapeGraphical.point.computeGraphical(graph, shape.point);
         case GRAPH_ARROW:
-            return arrowGraphical.computeGraphical(graph, arrow);
+            return shapeGraphical.arrow.computeGraphical(graph, shape.arrow);
+        case GRAPH_FUNC:
+            shapeGraphical = shape;
+            return;
         default: {
             printf("Unreachable switch branch");
             exit(EXIT_FAILURE);
@@ -42,19 +51,21 @@ void GraphPrimitive::computeGraphical(Graph *graph) {
 GraphPrimitive GraphPrimitive::createPoint(GraphVector pos, unsigned width, SDL_Color color)  {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_POINT;
-    primitive.point.pos = pos;
-    primitive.point.width = width;
-    primitive.point.color = color;
+    primitive.trueGraphical = false;
+    primitive.shape.point.pos = pos;
+    primitive.shape.point.width = width;
+    primitive.shape.point.color = color;
     return primitive;
 }
 
 GraphPrimitive GraphPrimitive::createLine(GraphVector start, GraphVector end, unsigned width, SDL_Color color) {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_LINE;
-    primitive.line.start = start;
-    primitive.line.end = end;
-    primitive.line.width = width;
-    primitive.line.color = color;
+    primitive.trueGraphical = false;
+    primitive.shape.line.start = start;
+    primitive.shape.line.end = end;
+    primitive.shape.line.width = width;
+    primitive.shape.line.color = color;
     return primitive;
 }
 
@@ -62,10 +73,11 @@ GraphPrimitive
 GraphPrimitive::createCircle(GraphVector pos, unsigned radius, unsigned width, SDL_Color color) {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_CIRCLE;
-    primitive.circle.pos = pos;
-    primitive.circle.radius = radius;
-    primitive.circle.width = width;
-    primitive.circle.color = color;
+    primitive.trueGraphical = false;
+    primitive.shape.circle.pos = pos;
+    primitive.shape.circle.radius = radius;
+    primitive.shape.circle.width = width;
+    primitive.shape.circle.color = color;
     return primitive;
 }
 
@@ -78,10 +90,30 @@ GraphPrimitive
 GraphPrimitive::createArrow(GraphVector start, GraphVector end, unsigned width, SDL_Color color) {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_ARROW;
-    primitive.arrow.start = start;
-    primitive.arrow.end = end;
-    primitive.arrow.width = width;
-    primitive.arrow.color = color;
+    primitive.trueGraphical = false;
+    primitive.shape.arrow.start = start;
+    primitive.shape.arrow.end = end;
+    primitive.shape.arrow.width = width;
+    primitive.shape.arrow.color = color;
+    return primitive;
+}
+
+bool GraphPrimitive::isTrueGraphical() const {
+    return trueGraphical;
+}
+
+void GraphPrimitive::setTrueGraphical(bool trueGraph) {
+    GraphPrimitive::trueGraphical = trueGraph;
+}
+
+GraphPrimitive GraphPrimitive::createFunc(double(*func)(double), unsigned pointsPerTick, unsigned int width, SDL_Color color) {
+    GraphPrimitive primitive = {};
+    primitive.type = GRAPH_FUNC;
+    primitive.trueGraphical = false;
+    primitive.shape.func.func = func;
+    primitive.shape.func.pointsPerTick = pointsPerTick;
+    primitive.shape.func.width = width;
+    primitive.shape.func.color = color;
     return primitive;
 }
 
@@ -156,4 +188,20 @@ void GraphPrimitiveArrow::computeGraphical(Graph *pGraph, GraphPrimitiveArrow ar
     transformed.start = GraphPrimitive::transformPoint(transformed.start, pGraph);
     transformed.end = GraphPrimitive::transformPoint(transformed.end, pGraph);
     *this = transformed;
+}
+
+int GraphPrimitiveFunction::render(Graph* graph, SDL_Surface *surface, SDL_Renderer *renderer) const {
+    double start = -graph->xRanges.negative;
+    double increment = (double)graph->style.xtick / (double)pointsPerTick;
+    GraphContent content;
+    content.penUp();
+    content.moveTo(start, func(start));
+    content.penDown();
+    for (unsigned i = 0; i < graph->xRng * pointsPerTick; i++) {
+        start += increment;
+        content.moveTo(start, func(start), width, color);
+    }
+    content.render(graph);
+    content.dest();
+    return 1;
 }

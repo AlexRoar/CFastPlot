@@ -28,17 +28,6 @@ void GraphContent::penUp() {
     isPenDown = false;
 }
 
-void GraphContent::addLine(GraphPrimitiveLine line) {
-    GraphPrimitive primitive = {GraphPrimitive::GraphPrimitiveType::GRAPH_LINE};
-    primitive.line = line;
-    content.pushBack(primitive);
-}
-
-void GraphContent::addArrow(GraphPrimitiveArrow line) {
-    GraphPrimitive primitive = {GraphPrimitive::GraphPrimitiveType::GRAPH_ARROW};
-    primitive.arrow = line;
-    content.pushBack(primitive);
-}
 
 void GraphContent::render(Graph *graph, bool calcGraphics) {
     for (size_t pos = content.begin(); pos != content.end(); content.nextIterator(&pos)) {
@@ -46,7 +35,7 @@ void GraphContent::render(Graph *graph, bool calcGraphics) {
         content.get(pos, &elem);
         if (calcGraphics)
             elem.computeGraphical(graph);
-        elem.render(graph->surface, graph->renderer);
+        elem.render(graph, graph->surface, graph->renderer);
     }
 }
 
@@ -58,4 +47,8 @@ void GraphContent::addVector(GraphVector vector, GraphVector position, unsigned 
     content.pushBack(GraphPrimitive::createArrow(position,
                                                  {vector.x + position.x, vector.y + position.y},
                                                  width, color));
+}
+
+void GraphContent::addPrimitive(GraphPrimitive primitive) {
+    content.pushBack(primitive);
 }

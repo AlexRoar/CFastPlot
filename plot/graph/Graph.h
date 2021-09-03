@@ -4,6 +4,15 @@
 #include "GraphContent.h"
 
 struct Graph {
+    struct GraphStyle {
+        unsigned xtick = 1, ytick = 1;
+        unsigned dpiMul = 1;
+        bool displayXTicks = true, displayYTicks = true;
+        SDL_Color background = {255, 255, 255, 255};
+        SDL_Color tickColor = {150, 150, 150, 255};
+        SDL_Color gridColor = {220, 220, 240, 100};
+        SDL_Color axesColor = {50, 50, 50, 255};
+    };
     struct GraphRange {
         double negative;
         double positive;
@@ -11,10 +20,6 @@ struct Graph {
 
     GraphRange xRanges, yRanges;
     unsigned pixelsWidth, pixelsHeight;
-    unsigned xtick, ytick;
-    unsigned dpiMul;
-
-    bool displayXTicks, displayYTicks;
 
     GraphContent content;
     GraphContent interface;
@@ -22,11 +27,13 @@ struct Graph {
     SDL_Surface* surface;
     SDL_Renderer* renderer;
 
-    unsigned pixelsX0, pixelsY0;
+    GraphStyle style;
+
+    int pixelsX0, pixelsY0;
     double xRng, yRng;
 
     Graph(unsigned pxWidth, unsigned pxHeight, unsigned dpiMul, GraphRange xRanges, GraphRange yRanges,
-          unsigned xtick = 1, unsigned ytick = 1, bool displayXTicks = true, bool displayYTicks = true);
+          GraphStyle style);
 
     void dest();
 
@@ -36,9 +43,11 @@ struct Graph {
 
     void initInterface();
 
-    SDL_Texture* getTexture(SDL_Renderer* rend) const;
+    void updateInterface();
 
-    void plot(double(*func)(double), unsigned pointsPerTick=10, unsigned width=1, SDL_Color color={32, 99, 155, 255});
+    void updateRanges();
+
+    SDL_Texture* getTexture(SDL_Renderer* rend) const;
 
     void matchYRange();
 

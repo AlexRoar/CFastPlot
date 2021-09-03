@@ -13,9 +13,7 @@ struct GraphContent {
 
     void moveTo(GraphVector pos, unsigned width = 1, SDL_Color color = {237, 85, 59, 255});
 
-    void addLine(GraphPrimitiveLine line);
-
-    void addArrow(GraphPrimitiveArrow line);
+    void addPrimitive(GraphPrimitive primitive);
 
     void addVector(GraphVector vector, GraphVector position, unsigned width=3, SDL_Color color={60, 174, 163, 255});
 

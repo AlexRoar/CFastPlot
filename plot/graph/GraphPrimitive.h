@@ -51,28 +51,36 @@ struct GraphPrimitiveArrow {
     void computeGraphical(Graph *pGraph, GraphPrimitiveArrow point);
 };
 
-struct GraphPrimitive {
-    enum GraphPrimitiveType {
-        GRAPH_LINE,
-        GRAPH_POINT,
-        GRAPH_CIRCLE,
-        GRAPH_ARROW
-    };
-    GraphPrimitiveType type;
+struct GraphPrimitiveFunction {
+    double(*func)(double);
+    unsigned width;
+    unsigned pointsPerTick;
+    SDL_Color color;
 
-    union {
+    int render(Graph* graph, SDL_Surface* surface, SDL_Renderer* renderer) const;
+};
+
+struct GraphPrimitive {
+    typedef union {
         GraphPrimitiveLine line;
         GraphPrimitiveCircle circle;
         GraphPrimitivePoint point;
         GraphPrimitiveArrow arrow;
-    };
+        GraphPrimitiveFunction func;
+    } GraphPrimitives;
 
-    union {
-        GraphPrimitiveLine lineGraphical;
-        GraphPrimitiveCircle circleGraphical;
-        GraphPrimitivePoint pointGraphical;
-        GraphPrimitiveArrow arrowGraphical;
+    enum GraphPrimitiveType {
+        GRAPH_LINE,
+        GRAPH_POINT,
+        GRAPH_CIRCLE,
+        GRAPH_ARROW,
+        GRAPH_FUNC
     };
+    GraphPrimitiveType type;
+    bool trueGraphical;
+
+    GraphPrimitives shape;
+    GraphPrimitives shapeGraphical;
 
     static GraphPrimitive createCircle(GraphVector pos, unsigned radius, unsigned width, SDL_Color color);
 
@@ -82,9 +90,15 @@ struct GraphPrimitive {
 
     static GraphPrimitive createPoint(GraphVector pos, unsigned width, SDL_Color color);
 
+    static GraphPrimitive createFunc(double(*func)(double), unsigned pointsPerTick, unsigned width, SDL_Color color);
+
     static GraphVector transformPoint(GraphVector point, Graph* graph);
 
     void computeGraphical(Graph* graph);
 
-    int render(SDL_Surface* surface, SDL_Renderer* renderer);
+    bool isTrueGraphical() const;
+
+    void setTrueGraphical(bool trueGraphical);
+
+    int render(Graph* graph, SDL_Surface* surface, SDL_Renderer* renderer);
 };

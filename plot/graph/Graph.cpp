@@ -1,31 +1,17 @@
 #pragma once
 #include "Graph.h"
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-static const Uint32 rmask = 0xff000000;
-static const Uint32 gmask = 0x00ff0000;
-static const Uint32 bmask = 0x0000ff00;
-static const Uint32 amask = 0x000000ff;
-#else
-static const Uint32 rmask = 0x000000ff;
-static const Uint32 gmask = 0x0000ff00;
-static const Uint32 bmask = 0x00ff0000;
-static const Uint32 amask = 0xff000000;
-#endif
+#include "../sdl/GfxExtensions.h"
 
 Graph::Graph(unsigned pxWidth, unsigned pxHeight, unsigned dpiMul, Graph::GraphRange xRanges, Graph::GraphRange yRanges,
-             unsigned xtick, unsigned ytick, bool displayXTicks, bool displayYTicks) :
-        xRanges(xRanges), yRanges(yRanges), pixelsWidth(pxWidth), pixelsHeight(pxHeight),
-        xtick(xtick), ytick(ytick), displayXTicks(displayXTicks), displayYTicks(displayYTicks),
+             GraphStyle style) :
+        xRanges(xRanges), yRanges(yRanges), pixelsWidth(pxWidth), pixelsHeight(pxHeight), style(style),
         surface(nullptr), renderer(nullptr),
-        pixelsX0((unsigned) ((float) (xRanges.negative) * (float) pxWidth /
+        pixelsX0((int) ((float) (xRanges.negative) * (float) pxWidth /
                              (float) (xRanges.positive + xRanges.negative))),
-        pixelsY0((unsigned) ((float) yRanges.positive * (float) pxHeight /
+        pixelsY0((int) ((float) yRanges.positive * (float) pxHeight /
                              (float) (yRanges.positive + yRanges.negative))),
-        xRng(xRanges.positive + xRanges.negative), yRng(yRanges.positive + yRanges.negative),
-        dpiMul(dpiMul){
+        xRng(xRanges.positive + xRanges.negative), yRng(yRanges.positive + yRanges.negative) {
     surface = SDL_CreateRGBSurface(0, (int) (pxWidth), (int) (pxHeight), 32, rmask, gmask, bmask, amask);
-    SDL_FillRect(surface, nullptr, -1);
     renderer = SDL_CreateSoftwareRenderer(surface);
 
     initInterface();
@@ -52,12 +38,13 @@ GraphContent Graph::getContent() const {
 }
 
 void Graph::render(){
+    updateRanges();
+    SDL_FillRect(surface, nullptr, ColorToUint(style.background));
     this->interface.render(this);
     this->content.render(this);
 }
 
 void Graph::setContent(const GraphContent &newContent) {
-    SDL_FillRect(surface, nullptr, -1);
     this->content.dest();
     this->content = newContent;
     this->content.content = this->content.content.copy();
@@ -66,81 +53,65 @@ void Graph::setContent(const GraphContent &newContent) {
 }
 
 void Graph::initInterface() {
-    const SDL_Color tickColor = {150, 150, 150, 255};
-    const SDL_Color gridColor = {220, 220, 240, 100};
-
-    if (displayXTicks) {
-        for (int i = 0; i < xRng / xtick + 1; i++) {
+    if (style.displayXTicks) {
+        for (int i = 0; i < (abs(xRanges.negative) + abs(xRanges.positive)) / style.xtick + 1; i++) {
             // grid
-            interface.addLine({{(double) xtick * i, (double) yRanges.positive},
-                               {(double) xtick * i, -(double) yRanges.negative}, 1,
-                               gridColor});
-            interface.addLine({{-(double) xtick * i, (double) yRanges.positive},
-                               {-(double) xtick * i, -(double) yRanges.negative}, 1,
-                               gridColor});
+            interface.addPrimitive(GraphPrimitive::createLine({(double) style.xtick * i, (double) yRanges.positive},
+                                                               {(double) style.xtick * i, -(double) yRanges.negative}, 1,
+                                                              style.gridColor));
+            interface.addPrimitive(GraphPrimitive::createLine({-(double) style.xtick * i, (double) yRanges.positive},
+                               {-(double) style.xtick * i, -(double) yRanges.negative}, 1,
+                                                              style.gridColor));
             // ticks
-            interface.addLine({{(double) xtick * i, (double) xtick / 5},
-                               {(double) xtick * i, -(double) xtick / 5}, 1,
-                               tickColor});
-            interface.addLine({{-(double) xtick * i, (double) xtick / 5},
-                               {-(double) xtick * i, -(double) xtick / 5}, 1,
-                               tickColor});
+            interface.addPrimitive(GraphPrimitive::createLine({(double) style.xtick * i, (double) style.xtick / 5},
+                               {(double) style.xtick * i, -(double) style.xtick / 5}, 1,
+                                                              style.tickColor));
+            interface.addPrimitive(GraphPrimitive::createLine({-(double) style.xtick * i, (double) style.xtick / 5},
+                               {-(double) style.xtick * i, -(double) style.xtick / 5}, 1,
+                                                              style.tickColor));
         }
     }
 
-    if (displayYTicks) {
-        for (int i = 0; i < yRng / ytick + 1; i++) {
+    if (style.displayYTicks) {
+        for (int i = 0; i < (abs(yRanges.negative) + abs(yRanges.positive)) / style.ytick + 1; i++) {
             // grid
-            interface.addLine({{-(double) xRanges.negative, (double) ytick * i},
-                               {(double) xRanges.positive, (double) ytick * i}, 1,
-                               gridColor});
-            interface.addLine({{-(double) xRanges.negative, -(double) ytick * i},
-                               {(double) xRanges.positive, -(double) ytick * i}, 1,
-                               gridColor});
+            interface.addPrimitive(GraphPrimitive::createLine({-(double) xRanges.negative, (double) style.ytick * i},
+                               {(double) xRanges.positive, (double) style.ytick * i}, 1,
+                                                              style.gridColor));
+            interface.addPrimitive(GraphPrimitive::createLine({-(double) xRanges.negative, -(double) style.ytick * i},
+                               {(double) xRanges.positive, -(double) style.ytick * i}, 1,
+                                                              style.gridColor));
 
             // ticks
-            interface.addLine({{(double) ytick / 5, (double) ytick * i},
-                               {-(double) ytick / 5, (double) ytick * i}, 1,
-                               tickColor});
-            interface.addLine({{(double) ytick / 5, -(double) ytick * i},
-                               {-(double) ytick / 5, -(double) ytick * i}, 1,
-                               tickColor});
+            interface.addPrimitive(GraphPrimitive::createLine({(double) style.ytick / 5, (double) style.ytick * i},
+                               {-(double) style.ytick / 5, (double) style.ytick * i}, 1,
+                                                              style.tickColor));
+            interface.addPrimitive(GraphPrimitive::createLine({(double) style.ytick / 5, -(double) style.ytick * i},
+                               {-(double) style.ytick / 5, -(double) style.ytick * i}, 1,
+                                                              style.tickColor));
         }
     }
-    interface.addArrow({{(double) (-xRanges.negative), 0}, {(double) xRanges.positive, 0},
-                        1, {50, 50, 50, 255}});
-    interface.addArrow({{0, (double) -yRanges.negative}, {0, (double) yRanges.positive},
-                        1, {50, 50, 50, 255}});
-}
-
-void Graph::plot(double (*func)(double), unsigned pointsPerTick, unsigned width, SDL_Color color) {
-    double start = -xRanges.negative;
-    double increment = (double)xtick / (double)pointsPerTick;
-    content.penUp();
-    content.moveTo(start, func(start));
-    content.penDown();
-    for (unsigned i = 0; i < xRng * pointsPerTick; i++) {
-        start += increment;
-        content.moveTo(start, func(start), width, color);
-    }
+    interface.addPrimitive(GraphPrimitive::createArrow({(double) (-xRanges.negative), 0}, {(double) xRanges.positive, 0},
+                        1, style.axesColor));
+    interface.addPrimitive(GraphPrimitive::createArrow({0, (double) -yRanges.negative}, {0, (double) yRanges.positive},
+                        1, style.axesColor));
 }
 
 void Graph::matchYRange() {
+    updateRanges();
     double aspectRatio = (double)pixelsHeight / (double)pixelsWidth;
     double newYRange = xRng * aspectRatio;
     double diff = newYRange - yRng;
     yRanges.negative += (diff * ((double)yRanges.negative / yRng));
     yRanges.positive += (diff * ((double)yRanges.positive / yRng));
     yRng = yRanges.positive + yRanges.negative;
-
-    SDL_FillRect(surface, nullptr, -1);
     interface.clear();
     initInterface();
-    interface.render(this);
-    content.render(this);
+    render();
 }
 
 void Graph::matchXRange() {
+    updateRanges();
     double aspectRatio = (double)pixelsWidth / (double)pixelsHeight;
     double newXRange = yRng * aspectRatio;
     double diff = newXRange - xRng;
@@ -148,9 +119,34 @@ void Graph::matchXRange() {
     xRanges.positive += (diff * ((double)xRanges.positive / xRng));
     xRng = xRanges.positive + xRanges.negative;
 
-    SDL_FillRect(surface, nullptr, -1);
     interface.clear();
     initInterface();
-    interface.render(this);
-    content.render(this);
+    render();
+}
+
+void Graph::updateInterface() {
+    updateRanges();
+    interface.clear();
+    initInterface();
+}
+
+void Graph::updateRanges() {
+    const double eps = 1e-4;
+    pixelsX0 = (int) ((float) (xRanges.negative) * (float) pixelsWidth /
+                           (float) (xRanges.positive + xRanges.negative));
+    pixelsY0 = (int) ((float) yRanges.positive * (float) pixelsHeight /
+                           (float) (yRanges.positive + yRanges.negative));
+    xRng = xRanges.positive + xRanges.negative;
+    yRng = yRanges.positive + yRanges.negative;
+    if (yRng < eps) {
+        yRanges.positive = 0.1;
+        yRanges.negative = 0.1;
+        updateRanges();
+    }
+
+    if (xRng < eps) {
+        xRanges.positive = 0.1;
+        xRanges.negative = 0.1;
+        updateRanges();
+    }
 }
