@@ -51,13 +51,17 @@ GraphContent Graph::getContent() const {
     return newContent;
 }
 
+void Graph::render(){
+    this->interface.render(this);
+    this->content.render(this);
+}
+
 void Graph::setContent(const GraphContent &newContent) {
     SDL_FillRect(surface, nullptr, -1);
     this->content.dest();
     this->content = newContent;
     this->content.content = this->content.content.copy();
-    this->interface.render(this);
-    this->content.render(this);
+    render();
     SDL_RenderPresent(renderer);
 }
 
@@ -119,7 +123,6 @@ void Graph::plot(double (*func)(double), unsigned pointsPerTick, unsigned width,
         start += increment;
         content.moveTo(start, func(start), width, color);
     }
-    content.render(this);
 }
 
 void Graph::matchYRange() {

@@ -38,9 +38,11 @@ struct Graph {
 
     SDL_Texture* getTexture(SDL_Renderer* rend) const;
 
-    void plot(double(*func)(double), unsigned pointsPerTick=10, unsigned width=1, SDL_Color color={0, 0, 255, 255});
+    void plot(double(*func)(double), unsigned pointsPerTick=10, unsigned width=1, SDL_Color color={32, 99, 155, 255});
 
     void matchYRange();
 
     void matchXRange();
+
+    void render();
 };

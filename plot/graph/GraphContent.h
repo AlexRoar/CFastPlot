@@ -3,7 +3,7 @@
 #include "../list/FastList.h"
 
 struct GraphContent {
-    GraphPosition lastPenPosition;
+    GraphVector lastPenPosition;
     bool isPenDown;
     FastList<GraphPrimitive> content;
 
@@ -11,11 +11,13 @@ struct GraphContent {
 
     void moveTo(double x, double y, unsigned width = 1, SDL_Color color = {0, 0, 255, 255});
 
-    void moveTo(GraphPosition pos, unsigned width = 1, SDL_Color color = {0, 0, 255, 255});
+    void moveTo(GraphVector pos, unsigned width = 1, SDL_Color color = {237, 85, 59, 255});
 
     void addLine(GraphPrimitiveLine line);
 
     void addArrow(GraphPrimitiveArrow line);
+
+    void addVector(GraphVector vector, GraphVector position, unsigned width=3, SDL_Color color={60, 174, 163, 255});
 
     void penDown();
 

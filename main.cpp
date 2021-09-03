@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_timer.h>
+#include <SDL_render.h>
 #include <SDL2_gfxPrimitives.h>
 #include "plot/graph/Graph.h"
 
@@ -27,12 +28,15 @@ int main(int argc, char *argv[]) {
                 {10, 20}, {10, 10});
     graph.matchXRange();
     graph.plot(func, 10, 2);
+    graph.content.addVector({3, 5}, {4, 3});
+    graph.render();
     SDL_Texture* tex = graph.getTexture(rend);
 
     Graph graphSmall(smallGraphWidth * dpiMul, smallGraphHeight * dpiMul, dpiMul,
                      {1, 20}, {5, 10});
     graphSmall.matchXRange();
     graphSmall.setContent(graph.getContent());
+    graphSmall.render();
     SDL_Texture* texSmall = graphSmall.getTexture(rend);
 
     SDL_Rect dest = {}, destSmall = {};
@@ -77,6 +81,7 @@ void SDLEventLoop(SDL_Renderer *rend, SDL_Texture *texSmall, SDL_Rect *dest, SDL
                     graph->matchXRange();
                     graph->content.clear();
                     graph->plot(func, 10, 2);
+                    graph->render();
                     tex = graph->getTexture(rend);
                     break;
                 }

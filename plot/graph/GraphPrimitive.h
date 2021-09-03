@@ -4,13 +4,13 @@
 #include <SDL_render.h>
 struct Graph;
 
-struct GraphPosition {
+struct GraphVector {
     double x, y;
 };
 
 struct GraphPrimitiveLine {
-    GraphPosition start;
-    GraphPosition end;
+    GraphVector start;
+    GraphVector end;
     unsigned width;
     SDL_Color color;
 
@@ -20,7 +20,7 @@ struct GraphPrimitiveLine {
 };
 
 struct GraphPrimitiveCircle {
-    GraphPosition pos;
+    GraphVector pos;
     unsigned radius;
     unsigned width;
     SDL_Color color;
@@ -31,7 +31,7 @@ struct GraphPrimitiveCircle {
 };
 
 struct GraphPrimitivePoint {
-    GraphPosition pos;
+    GraphVector pos;
     unsigned width;
     SDL_Color color;
 
@@ -41,8 +41,8 @@ struct GraphPrimitivePoint {
 };
 
 struct GraphPrimitiveArrow {
-    GraphPosition start;
-    GraphPosition end;
+    GraphVector start;
+    GraphVector end;
     unsigned width;
     SDL_Color color;
 
@@ -74,15 +74,15 @@ struct GraphPrimitive {
         GraphPrimitiveArrow arrowGraphical;
     };
 
-    static GraphPrimitive createCircle(GraphPosition pos, unsigned radius, unsigned width, SDL_Color color);
+    static GraphPrimitive createCircle(GraphVector pos, unsigned radius, unsigned width, SDL_Color color);
 
-    static GraphPrimitive createLine(GraphPosition start, GraphPosition end, unsigned width, SDL_Color color);
+    static GraphPrimitive createLine(GraphVector start, GraphVector end, unsigned width, SDL_Color color);
 
-    static GraphPrimitive createArrow(GraphPosition start, GraphPosition end, unsigned width, SDL_Color color);
+    static GraphPrimitive createArrow(GraphVector start, GraphVector end, unsigned width, SDL_Color color);
 
-    static GraphPrimitive createPoint(GraphPosition pos, unsigned width, SDL_Color color);
+    static GraphPrimitive createPoint(GraphVector pos, unsigned width, SDL_Color color);
 
-    static GraphPosition transformPoint(GraphPosition point, Graph* graph);
+    static GraphVector transformPoint(GraphVector point, Graph* graph);
 
     void computeGraphical(Graph* graph);
 

@@ -39,7 +39,7 @@ void GraphPrimitive::computeGraphical(Graph *graph) {
     }
 }
 
-GraphPrimitive GraphPrimitive::createPoint(GraphPosition pos, unsigned width, SDL_Color color)  {
+GraphPrimitive GraphPrimitive::createPoint(GraphVector pos, unsigned width, SDL_Color color)  {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_POINT;
     primitive.point.pos = pos;
@@ -48,7 +48,7 @@ GraphPrimitive GraphPrimitive::createPoint(GraphPosition pos, unsigned width, SD
     return primitive;
 }
 
-GraphPrimitive GraphPrimitive::createLine(GraphPosition start, GraphPosition end, unsigned width, SDL_Color color) {
+GraphPrimitive GraphPrimitive::createLine(GraphVector start, GraphVector end, unsigned width, SDL_Color color) {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_LINE;
     primitive.line.start = start;
@@ -59,7 +59,7 @@ GraphPrimitive GraphPrimitive::createLine(GraphPosition start, GraphPosition end
 }
 
 GraphPrimitive
-GraphPrimitive::createCircle(GraphPosition pos, unsigned radius, unsigned width, SDL_Color color) {
+GraphPrimitive::createCircle(GraphVector pos, unsigned radius, unsigned width, SDL_Color color) {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_CIRCLE;
     primitive.circle.pos = pos;
@@ -69,13 +69,13 @@ GraphPrimitive::createCircle(GraphPosition pos, unsigned radius, unsigned width,
     return primitive;
 }
 
-GraphPosition GraphPrimitive::transformPoint(GraphPosition point, Graph *graph) {
+GraphVector GraphPrimitive::transformPoint(GraphVector point, Graph *graph) {
     return {point.x * (float)graph->pixelsWidth / (float)(graph->xRng) + (float)graph->pixelsX0,
             -point.y * (float)graph->pixelsHeight  / (float)(graph->yRng) + (float)graph->pixelsY0};
 }
 
 GraphPrimitive
-GraphPrimitive::createArrow(GraphPosition start, GraphPosition end, unsigned width, SDL_Color color) {
+GraphPrimitive::createArrow(GraphVector start, GraphVector end, unsigned width, SDL_Color color) {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_ARROW;
     primitive.arrow.start = start;
@@ -122,26 +122,32 @@ void GraphPrimitiveCircle::computeGraphical(Graph *pGraph, GraphPrimitiveCircle 
 }
 
 int GraphPrimitiveArrow::render(SDL_Surface *surface, SDL_Renderer *renderer) const {
-    auto res = aalineRGBA(renderer, (Sint16)this->start.x, (Sint16)this->start.y,
-                      (Sint16)this->end.x, (Sint16)this->end.y,
-                      this->color.r, this->color.g, this->color.b, this->color.a);
     const double cos = 0.95, sin = 0.31224989; // specified by arrow angle
+    const double l2 = 20;
     const double dx = (this->start.x - this->end.x);
     const double dy = (this->start.y - this->end.y);
     const double l1 = sqrt(dx * dx + dy * dy);
-    const double l2 = 20;
-    GraphPosition end1 = {
+
+    const double decreaseFactor = (l2 * cos) / (l1);
+
+    GraphVector end1 = {
             (this->end.x + (dx * cos + dy * sin) * l2 / l1),
             (this->end.y + (-dx * sin + dy * cos) * l2 / l1)};
-    GraphPosition end2 = {
+    GraphVector end2 = {
             (this->end.x + (dx * cos - dy * sin) * l2 / l1),
             (this->end.y + (dx * sin + dy * cos) * l2 / l1)};
 
-    res |= aatrigonRGBA(renderer,
+    int res = thickLineRGBA(renderer, (Sint16)this->start.x, (Sint16)this->start.y,
+                      (Sint16)(this->end.x + dx * decreaseFactor), (Sint16)(this->end.y + dy * decreaseFactor),
+                      width,
+                      this->color.r, this->color.g, this->color.b, this->color.a);
+
+
+    res |= filledTrigonRGBA(renderer,
                         (Sint16)end1.x, (Sint16)end1.y,
                         (Sint16)end2.x, (Sint16)end2.y,
                         (Sint16)end.x, (Sint16)end.y,
-                        this->color.r, this->color.g, this->color.b, this->color.a);
+                            this->color.r, this->color.g, this->color.b, this->color.a);
     return res;
 }
 
