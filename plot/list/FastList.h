@@ -38,7 +38,7 @@ class FastList {
     size_t freeSize;
 public:
 
-    FastList<T> copy(){
+    FastList<T> copy() const {
         FastList<T> newList = {};
         newList.init(capacity);
         newList.optimized = optimized;
@@ -66,6 +66,7 @@ public:
     }
 
     void dest() {
+        storage = nullptr;
         free(this->storage);
     }
 

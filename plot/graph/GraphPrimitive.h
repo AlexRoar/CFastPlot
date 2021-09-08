@@ -2,11 +2,8 @@
 #include <SDL.h>
 #include <SDL2_gfxPrimitives.h>
 #include <SDL_render.h>
+#include "../vector/Vector.h"
 struct Graph;
-
-struct GraphVector {
-    double x, y;
-};
 
 struct GraphPrimitiveLine {
     GraphVector start;
@@ -52,7 +49,7 @@ struct GraphPrimitiveArrow {
 };
 
 struct GraphPrimitiveFunction {
-    double(*func)(double);
+    double(*func)(double) = nullptr;
     unsigned width;
     unsigned pointsPerTick;
     SDL_Color color;
@@ -96,9 +93,9 @@ struct GraphPrimitive {
 
     void computeGraphical(Graph* graph);
 
-    bool isTrueGraphical() const;
+    [[nodiscard]] bool isTrueGraphical() const;
 
     void setTrueGraphical(bool trueGraphical);
 
-    int render(Graph* graph, SDL_Surface* surface, SDL_Renderer* renderer);
+    int render(Graph* graph);
 };

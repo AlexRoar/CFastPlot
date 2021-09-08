@@ -5,18 +5,20 @@
 #include "GraphPrimitive.h"
 #include "../sdl/GfxExtensions.h"
 
-int GraphPrimitive::render(Graph* graph, SDL_Surface *surface, SDL_Renderer* renderer) {
+#define VECTOR_ARITHMACY
+
+int GraphPrimitive::render(Graph *graph) {
     switch (type) {
         case GRAPH_CIRCLE:
-            return shapeGraphical.circle.render(surface, renderer);
+            return shapeGraphical.circle.render(graph->getSurface(), graph->getRenderer());
         case GRAPH_LINE:
-            return shapeGraphical.line.render(surface, renderer);
+            return shapeGraphical.line.render(graph->getSurface(), graph->getRenderer());
         case GRAPH_POINT:
-            return shapeGraphical.point.render(surface, renderer);
+            return shapeGraphical.point.render(graph->getSurface(), graph->getRenderer());
         case GRAPH_ARROW:
-            return shapeGraphical.arrow.render(surface, renderer);
+            return shapeGraphical.arrow.render(graph->getSurface(), graph->getRenderer());
         case GRAPH_FUNC:
-            return shapeGraphical.func.render(graph, surface, renderer);
+            return shapeGraphical.func.render(graph, graph->getSurface(), graph->getRenderer());
         default: {
             printf("Unreachable switch branch");
             exit(EXIT_FAILURE);
@@ -48,7 +50,7 @@ void GraphPrimitive::computeGraphical(Graph *graph) {
     }
 }
 
-GraphPrimitive GraphPrimitive::createPoint(GraphVector pos, unsigned width, SDL_Color color)  {
+GraphPrimitive GraphPrimitive::createPoint(GraphVector pos, unsigned width, SDL_Color color) {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_POINT;
     primitive.trueGraphical = false;
@@ -82,8 +84,9 @@ GraphPrimitive::createCircle(GraphVector pos, unsigned radius, unsigned width, S
 }
 
 GraphVector GraphPrimitive::transformPoint(GraphVector point, Graph *graph) {
-    return {point.x * (float)graph->pixelsWidth / (float)(graph->xRng) + (float)graph->pixelsX0,
-            -point.y * (float)graph->pixelsHeight  / (float)(graph->yRng) + (float)graph->pixelsY0};
+    return {point.getX() * (float) graph->getPixelsWidth() / (float) (graph->getXRng()) + (float) graph->getPixelsX0(),
+            -point.getY() * (float) graph->getPixelsHeight() / (float) (graph->getYRng()) +
+            (float) graph->getPixelsY0()};
 }
 
 GraphPrimitive
@@ -106,7 +109,8 @@ void GraphPrimitive::setTrueGraphical(bool trueGraph) {
     GraphPrimitive::trueGraphical = trueGraph;
 }
 
-GraphPrimitive GraphPrimitive::createFunc(double(*func)(double), unsigned pointsPerTick, unsigned int width, SDL_Color color) {
+GraphPrimitive
+GraphPrimitive::createFunc(double(*func)(double), unsigned pointsPerTick, unsigned int width, SDL_Color color) {
     GraphPrimitive primitive = {};
     primitive.type = GRAPH_FUNC;
     primitive.trueGraphical = false;
@@ -117,9 +121,9 @@ GraphPrimitive GraphPrimitive::createFunc(double(*func)(double), unsigned points
     return primitive;
 }
 
-int GraphPrimitiveLine::render(SDL_Surface *surface, SDL_Renderer* renderer) const {
-    return thickLineRGBA(renderer, (Sint16)this->start.x, (Sint16)this->start.y,
-                         (Sint16)this->end.x, (Sint16)this->end.y,
+int GraphPrimitiveLine::render(SDL_Surface *surface, SDL_Renderer *renderer) const {
+    return thickLineRGBA(renderer, (Sint16) this->start.getX(), (Sint16) this->start.getY(),
+                         (Sint16) this->end.getX(), (Sint16) this->end.getY(),
                          width,
                          this->color.r, this->color.g, this->color.b, this->color.a);
 }
@@ -131,8 +135,8 @@ void GraphPrimitiveLine::computeGraphical(Graph *pGraph, GraphPrimitiveLine line
     *this = transformed;
 }
 
-int GraphPrimitivePoint::render(SDL_Surface *surface, SDL_Renderer* renderer) const {
-    return filledCircleRGBA(renderer, (Sint16)this->pos.x, (Sint16)this->pos.y, (Sint16)this->width,
+int GraphPrimitivePoint::render(SDL_Surface *surface, SDL_Renderer *renderer) const {
+    return filledCircleRGBA(renderer, (Sint16) this->pos.getX(), (Sint16) this->pos.getY(), (Sint16) this->width,
                             this->color.r, this->color.g, this->color.b, this->color.a);
 }
 
@@ -142,8 +146,8 @@ void GraphPrimitivePoint::computeGraphical(Graph *pGraph, GraphPrimitivePoint po
     *this = transformed;
 }
 
-int GraphPrimitiveCircle::render(SDL_Surface *surface, SDL_Renderer* renderer) const {
-    return thickCircleRGBA(renderer, (Sint16)this->pos.x, (Sint16)this->pos.y, (Sint16)this->width,
+int GraphPrimitiveCircle::render(SDL_Surface *surface, SDL_Renderer *renderer) const {
+    return thickCircleRGBA(renderer, (Sint16) this->pos.getX(), (Sint16) this->pos.getY(), (Sint16) this->width,
                            this->color.r, this->color.g, this->color.b, this->color.a, this->width);
 }
 
@@ -154,33 +158,54 @@ void GraphPrimitiveCircle::computeGraphical(Graph *pGraph, GraphPrimitiveCircle 
 }
 
 int GraphPrimitiveArrow::render(SDL_Surface *surface, SDL_Renderer *renderer) const {
+#ifdef VECTOR_ARITHMACY
+    GraphVector difference = start - end;
+    const double arrowScaling = log(1 + difference.len()) * 3;
+    GraphVector arrowGuideVector = (difference).normalized() * arrowScaling;
+    GraphVector perpendicular = arrowGuideVector.perpendicular().normalized() * arrowScaling / 3;
+
+    GraphVector firstArrow = end + arrowGuideVector + perpendicular,
+            secondArrow = end + arrowGuideVector - perpendicular;
+
+    GraphVector endDecreased = end + arrowGuideVector;
+
+    int res = thickLineRGBA(renderer, (Sint16)start.getX(), (Sint16)start.getY(),
+                            (Sint16)(endDecreased.getX()), (Sint16)(endDecreased.getY()),
+                            width, color.r, color.g, color.b, color.a);
+
+    res |= filledTrigonRGBA(renderer, (Sint16)firstArrow.getX(), (Sint16)firstArrow.getY(),
+                            (Sint16)secondArrow.getX(), (Sint16)secondArrow.getY(),(Sint16)end.getX(),
+                            (Sint16)end.getY(), color.r, color.g, color.b, color.a);
+    return res;
+#else
     const double cos = 0.95, sin = 0.31224989; // specified by arrow angle
     const double l2 = 20;
-    const double dx = (this->start.x - this->end.x);
-    const double dy = (this->start.y - this->end.y);
+    const double dx = (this->start.getX() - this->end.getX());
+    const double dy = (this->start.getY() - this->end.getY());
     const double l1 = sqrt(dx * dx + dy * dy);
 
     const double decreaseFactor = (l2 * cos) / (l1);
 
     GraphVector end1 = {
-            (this->end.x + (dx * cos + dy * sin) * l2 / l1),
-            (this->end.y + (-dx * sin + dy * cos) * l2 / l1)};
+            (this->end.getX() + (dx * cos + dy * sin) * l2 / l1),
+            (this->end.getY() + (-dx * sin + dy * cos) * l2 / l1)};
     GraphVector end2 = {
-            (this->end.x + (dx * cos - dy * sin) * l2 / l1),
-            (this->end.y + (dx * sin + dy * cos) * l2 / l1)};
+            (this->end.getX() + (dx * cos - dy * sin) * l2 / l1),
+            (this->end.getY() + (dx * sin + dy * cos) * l2 / l1)};
 
-    int res = thickLineRGBA(renderer, (Sint16)this->start.x, (Sint16)this->start.y,
-                      (Sint16)(this->end.x + dx * decreaseFactor), (Sint16)(this->end.y + dy * decreaseFactor),
+    int res = thickLineRGBA(renderer, (Sint16)this->start.getX(), (Sint16)this->start.getY(),
+                      (Sint16)(this->end.getX() + dx * decreaseFactor), (Sint16)(this->end.getY() + dy * decreaseFactor),
                       width,
                       this->color.r, this->color.g, this->color.b, this->color.a);
 
 
     res |= filledTrigonRGBA(renderer,
-                        (Sint16)end1.x, (Sint16)end1.y,
-                        (Sint16)end2.x, (Sint16)end2.y,
-                        (Sint16)end.x, (Sint16)end.y,
+                        (Sint16)end1.getX(), (Sint16)end1.getY(),
+                        (Sint16)end2.getX(), (Sint16)end2.getY(),
+                        (Sint16)end.getX(), (Sint16)end.getY(),
                             this->color.r, this->color.g, this->color.b, this->color.a);
     return res;
+#endif
 }
 
 void GraphPrimitiveArrow::computeGraphical(Graph *pGraph, GraphPrimitiveArrow arrow) {
@@ -190,18 +215,17 @@ void GraphPrimitiveArrow::computeGraphical(Graph *pGraph, GraphPrimitiveArrow ar
     *this = transformed;
 }
 
-int GraphPrimitiveFunction::render(Graph* graph, SDL_Surface *surface, SDL_Renderer *renderer) const {
-    double start = -graph->xRanges.negative;
-    double increment = (double)graph->style.xtick / (double)pointsPerTick;
-    GraphContent content;
+int GraphPrimitiveFunction::render(Graph *graph, SDL_Surface *surface, SDL_Renderer *renderer) const {
+    double start = -graph->getXRanges().negative;
+    double increment = (double) graph->getStyle().xtick / (double) pointsPerTick;
+    GraphContent content {};
     content.penUp();
     content.moveTo(start, func(start));
     content.penDown();
-    for (unsigned i = 0; i < graph->xRng * pointsPerTick; i++) {
+    for (unsigned i = 0; i < graph->getXRng() * pointsPerTick; i++) {
         start += increment;
         content.moveTo(start, func(start), width, color);
     }
     content.render(graph);
-    content.dest();
     return 1;
 }

@@ -6,18 +6,20 @@ GraphContent::GraphContent() :
     content.init();
 }
 
-void GraphContent::dest() {
+GraphContent::~GraphContent() {
     content.dest();
 }
 
-void GraphContent::moveTo(GraphVector pos, unsigned width, SDL_Color color) {
+size_t GraphContent::moveTo(GraphVector pos, unsigned width, SDL_Color color) {
+    size_t res = 0;
     if (isPenDown)
-        content.pushBack(GraphPrimitive::createLine(lastPenPosition, pos, width, color));
+        res = content.pushBack(GraphPrimitive::createLine(lastPenPosition, pos, width, color));
     lastPenPosition = pos;
+    return res;
 }
 
-void GraphContent::moveTo(double x, double y, unsigned width, SDL_Color color) {
-    moveTo({x, y}, width, color);
+size_t GraphContent::moveTo(double x, double y, unsigned width, SDL_Color color) {
+    return moveTo({x, y}, width, color);
 }
 
 void GraphContent::penDown() {
@@ -35,7 +37,7 @@ void GraphContent::render(Graph *graph, bool calcGraphics) {
         content.get(pos, &elem);
         if (calcGraphics)
             elem.computeGraphical(graph);
-        elem.render(graph, graph->surface, graph->renderer);
+        elem.render(graph);
     }
 }
 
@@ -43,12 +45,35 @@ void GraphContent::clear() {
     content.clear();
 }
 
-void GraphContent::addVector(GraphVector vector, GraphVector position, unsigned width, SDL_Color color) {
+size_t GraphContent::addVector(GraphVector vector, GraphVector position, unsigned width, SDL_Color color) {
+    size_t result = 0;
     content.pushBack(GraphPrimitive::createArrow(position,
-                                                 {vector.x + position.x, vector.y + position.y},
-                                                 width, color));
+                                                 {vector.getX() + position.getX(), vector.getY() + position.getY()},
+                                                 width, color), &result);
+    return result;
 }
 
-void GraphContent::addPrimitive(GraphPrimitive primitive) {
-    content.pushBack(primitive);
+size_t GraphContent::addPrimitive(GraphPrimitive primitive) {
+    return content.pushBack(primitive);
+}
+
+GraphContent &GraphContent::operator=(const GraphContent &other) {
+    if (this != &other){
+        this->content.dest();
+        this->content = other.content.copy();
+
+        this->isPenDown = other.isPenDown;
+        this->lastPenPosition = other.lastPenPosition;
+    }
+    return *this;
+}
+
+GraphPrimitive GraphContent::getById(size_t id) {
+    GraphPrimitive* element = nullptr;
+    content.get(id, &element);
+    return *element;
+}
+
+void GraphContent::setById(size_t id, GraphPrimitive primitive) {
+    content.set(id, primitive);
 }
